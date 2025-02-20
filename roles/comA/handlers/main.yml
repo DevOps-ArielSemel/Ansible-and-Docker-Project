@@ -1,0 +1,11 @@
+---
+- name: Restart NFS
+  become: yes
+  shell: |
+    exportfs -ra
+    systemctl restart nfs-kernel-server
+
+- name: Apply Netplan
+  become: yes
+  command: netplan apply
+

@@ -1,0 +1,74 @@
+---
+- name: Create CNS group
+  become: yes
+  group:
+    name: CNS
+    state: present
+
+- name: Create candidate user
+  become: yes
+  user:
+    name: candidate
+    group: CNS
+    shell: /bin/bash
+    create_home: yes
+
+- name: Create /tmp/letsplay directory
+  become: yes
+  file:
+    path: /tmp/letsplay
+    state: directory
+    owner: candidate
+    group: CNS
+    mode: '0775'
+
+- name: create inventory.txt file inside /tmp/letsplay directory
+  become: yes
+  file:
+    path: /tmp/letsplay/inventory.txt
+    state: touch
+    owner: candidate
+    group: CNS
+    mode: '0664'
+
+- name: Write system information to inventory file
+  shell: |
+    echo "Disk Type: $(lsblk)" > /tmp/letsplay/inventory.txt
+    echo "Installed Packages: $(dpkg --get-selections)" >> /tmp/letsplay/inventory.txt
+    echo "CPU Info: $(lscpu)" >> /tmp/letsplay/inventory.txt
+    echo "Partitions: $(lsblk -f)" >> /tmp/letsplay/inventory.txt
+    echo "Top 5 Processes: $(ps aux --sort=-%mem | head -n 6)" >> /tmp/letsplay/inventory.txt
+  become: yes
+
+- name: Install NFS Server
+  become: yes
+  apt:
+    name: nfs-kernel-server
+    state: present
+
+- name: Export the /tmp/letsplay folder
+  become: yes
+  lineinfile:
+    path: /etc/exports
+    line: "/tmp/letsplay *(rw,sync,no_subtree_check,no_root_squash)"
+    create: yes
+  notify: Restart NFS
+
+
+- name: Disable Firewall
+  become: yes
+  service:
+    name: ufw
+    state: stopped
+    enabled: no
+
+- name: Set MTU to 1500
+  become: yes
+  replace:
+    path: /etc/netplan/50-cloud-init.yaml
+    regexp: '^(.*set-name: enp0s3.*)$'
+    replace: '\1\n            mtu: 1500'
+  notify: Apply Netplan
+
+
+

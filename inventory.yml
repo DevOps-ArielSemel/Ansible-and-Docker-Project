@@ -1,0 +1,12 @@
+all:
+  hosts:
+    comA:
+      ansible_host: 192.168.50.12
+      ansible_user: vagrant
+      ansible_ssh_private_key_file: ~/.comA_key
+
+    comB:
+      ansible_host: 192.168.50.13
+      ansible_user: vagrant
+      ansible_ssh_private_key_file: ~/.comB_key
+

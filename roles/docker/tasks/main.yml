@@ -1,0 +1,61 @@
+---
+  - name: Install Docker dependencies
+    become: yes
+    apt:
+      name:
+        - ca-certificates
+        - curl
+        - gnupg
+        - lsb-release
+      state: present
+      update_cache: yes
+  
+  - name: Add Docker GPG key
+    become: yes
+    shell: |
+      mkdir -p /etc/apt/keyrings
+      curl -fsSL https://download.docker.com/linux/ubuntu/gpg | tee /etc/apt/keyrings/docker.asc > /dev/null
+      chmod a+r /etc/apt/keyrings/docker.asc
+    args:
+      executable: /bin/bash
+  
+  - name: Add Docker repository
+    become: yes
+    shell: |
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+      apt update
+    args:
+      executable: /bin/bash
+  
+  - name: Install Docker
+    become: yes
+    apt:
+      name: docker-ce
+      state: present
+      update_cache: yes
+    notify: Restart Docker  
+  
+  - name: Ensure Docker service is running
+    become: yes
+    service:
+      name: docker
+      state: started
+      enabled: yes
+  
+  - name: Pull Nginx image
+    become: yes
+    shell: docker pull nginx
+
+  - name: Ensure Nginx container is running
+    become: yes
+    community.docker.docker_container:
+      name: nginx_container
+      image: nginx
+      state: started
+      restart_policy: always
+      published_ports:
+        - "8080:80"
+      volumes:
+        - "/tmp/letsplay2:/usr/share/nginx/html:ro"
+  
+  

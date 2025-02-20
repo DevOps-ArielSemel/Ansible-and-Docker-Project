@@ -1,0 +1,11 @@
+---
+- name: Configure ComA
+  hosts: comA
+  roles:
+    - ComA
+
+- name: Configure ComB
+  hosts: comB
+  roles:
+    - ComB
+    - docker
